@@ -1,0 +1,26 @@
+/*
+    SPDX-FileCopyrightText:  2015 LXQt team, 2024 Qtilities team
+    SPDX-License-Identifier: LGPL-2.1-or-later
+
+    This file is part of the statusnotifieritem-qt library
+    Author: Andrea Zanellato <redtid3@gmail.com>
+*/
+#ifndef SNI_QT_VERSION_H
+#define SNI_QT_VERSION_H
+
+#define SNI_QT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define SNI_QT_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define SNI_QT_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+#define SNI_QT_MAKE_VERSION(a, b, c) (((a) << 16) | ((b) << 8) | (c))
+
+#define SNI_QT_VERSION SNI_QT_MAKE_VERSION( \
+    SNI_QT_VERSION_MAJOR, \
+    SNI_QT_VERSION_MINOR, \
+    SNI_QT_VERSION_PATCH)
+
+// Use this macro to add code which depends on a minimum version of statusnotifieritem-qt
+#define SNI_QT_IS_VERSION(a, b, c) \
+    (SNI_QT_VERSION >= SNI_QT_MAKE_VERSION(a, b, c))
+
+#endif /* SNI_QT_VERSION_H */
