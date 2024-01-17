@@ -4,6 +4,8 @@ project(example
 )
 if(SNI_QT_EXAMPLE_USE_SYSTEM_LIB)
     find_package(StatusNotifierItemQt${QT_VERSION_MAJOR})
+else()
+    include_directories(${CMAKE_BINARY_DIR}/src) #include "statusnotifieritem_export.h"
 endif()
 
 set(PROJECT_SOURCES example.cpp)
