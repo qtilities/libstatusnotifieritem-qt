@@ -1,30 +1,11 @@
-/* BEGIN_COMMON_COPYRIGHT_HEADER
- * (c)LGPL2+
- *
- * LXQt - a lightweight, Qt based, desktop toolset
- * https://lxqt.org/
- *
- * Copyright: 2015 LXQt team
- * Authors:
- *   Paulo Lieuthier <paulolieuthier@gmail.com>
- *
- * This program or library is free software; you can redistribute it
- * and/or modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General
- * Public License along with this library; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301 USA
- *
- * END_COMMON_COPYRIGHT_HEADER */
+/*
+    SPDX-FileCopyrightText:  2015 LXQt team, 2024 Qtilities team
+    SPDX-License-Identifier: LGPL-2.1-or-later
 
+    This file is part of the statusnotifieritem-qt library
+    Authors:
+        Paulo Lieuthier <paulolieuthier@gmail.com>
+*/
 #include "statusnotifieritem.h"
 #include "statusnotifieritemadaptor.h"
 #include <QDBusInterface>
@@ -79,6 +60,16 @@ StatusNotifierItem::~StatusNotifierItem()
     QDBusConnection::disconnectFromBus(mService);
 }
 
+QString StatusNotifierItem::id() const
+{
+    return mId;
+}
+
+QString StatusNotifierItem::title() const
+{
+    return mTitle;
+}
+
 void StatusNotifierItem::registerToHost()
 {
     QDBusInterface interface(QLatin1String("org.kde.StatusNotifierWatcher"),
@@ -114,6 +105,10 @@ void StatusNotifierItem::setTitle(const QString &title)
     Q_EMIT mAdaptor->NewTitle();
 }
 
+QString StatusNotifierItem::status() const
+{
+    return mStatus;
+}
 void StatusNotifierItem::setStatus(const QString &status)
 {
     if (mStatus == status)
@@ -121,6 +116,11 @@ void StatusNotifierItem::setStatus(const QString &status)
 
     mStatus = status;
     Q_EMIT mAdaptor->NewStatus(mStatus);
+}
+
+QString StatusNotifierItem::category() const
+{
+    return mCategory;
 }
 
 void StatusNotifierItem::setCategory(const QString &category)
@@ -136,6 +136,11 @@ void StatusNotifierItem::setMenuPath(const QString& path)
     mMenuPath.setPath(path);
 }
 
+QDBusObjectPath StatusNotifierItem::menu() const
+{
+    return mMenuPath;
+}
+
 void StatusNotifierItem::setIconByName(const QString &name)
 {
     if (mIconName == name)
@@ -143,6 +148,16 @@ void StatusNotifierItem::setIconByName(const QString &name)
 
     mIconName = name;
     Q_EMIT mAdaptor->NewIcon();
+}
+
+QString StatusNotifierItem::iconName() const
+{
+    return mIconName;
+}
+
+IconPixmapList StatusNotifierItem::iconPixmap() const
+{
+    return mIcon;
 }
 
 void StatusNotifierItem::setIconByPixmap(const QIcon &icon)
@@ -156,6 +171,11 @@ void StatusNotifierItem::setIconByPixmap(const QIcon &icon)
     Q_EMIT mAdaptor->NewIcon();
 }
 
+QString StatusNotifierItem::overlayIconName() const
+{
+    return mOverlayIconName;
+}
+
 void StatusNotifierItem::setOverlayIconByName(const QString &name)
 {
     if (mOverlayIconName == name)
@@ -163,6 +183,11 @@ void StatusNotifierItem::setOverlayIconByName(const QString &name)
 
     mOverlayIconName = name;
     Q_EMIT mAdaptor->NewOverlayIcon();
+}
+
+IconPixmapList StatusNotifierItem::overlayIconPixmap() const
+{
+    return mOverlayIcon;
 }
 
 void StatusNotifierItem::setOverlayIconByPixmap(const QIcon &icon)
@@ -176,6 +201,11 @@ void StatusNotifierItem::setOverlayIconByPixmap(const QIcon &icon)
     Q_EMIT mAdaptor->NewOverlayIcon();
 }
 
+QString StatusNotifierItem::attentionIconName() const
+{
+    return mAttentionIconName;
+}
+
 void StatusNotifierItem::setAttentionIconByName(const QString &name)
 {
     if (mAttentionIconName == name)
@@ -183,6 +213,11 @@ void StatusNotifierItem::setAttentionIconByName(const QString &name)
 
     mAttentionIconName = name;
     Q_EMIT mAdaptor->NewAttentionIcon();
+}
+
+IconPixmapList StatusNotifierItem::attentionIconPixmap() const
+{
+    return mAttentionIcon;
 }
 
 void StatusNotifierItem::setAttentionIconByPixmap(const QIcon &icon)
@@ -196,6 +231,11 @@ void StatusNotifierItem::setAttentionIconByPixmap(const QIcon &icon)
     Q_EMIT mAdaptor->NewAttentionIcon();
 }
 
+QString StatusNotifierItem::toolTipTitle() const
+{
+    return mTooltipTitle;
+}
+
 void StatusNotifierItem::setToolTipTitle(const QString &title)
 {
     if (mTooltipTitle == title)
@@ -203,6 +243,11 @@ void StatusNotifierItem::setToolTipTitle(const QString &title)
 
     mTooltipTitle = title;
     Q_EMIT mAdaptor->NewToolTip();
+}
+
+QString StatusNotifierItem::toolTipSubTitle() const
+{
+    return mTooltipSubtitle;
 }
 
 void StatusNotifierItem::setToolTipSubTitle(const QString &subTitle)
@@ -214,6 +259,11 @@ void StatusNotifierItem::setToolTipSubTitle(const QString &subTitle)
     Q_EMIT mAdaptor->NewToolTip();
 }
 
+QString StatusNotifierItem::toolTipIconName() const
+{
+    return mTooltipIconName;
+}
+
 void StatusNotifierItem::setToolTipIconByName(const QString &name)
 {
     if (mTooltipIconName == name)
@@ -221,6 +271,11 @@ void StatusNotifierItem::setToolTipIconByName(const QString &name)
 
     mTooltipIconName = name;
     Q_EMIT mAdaptor->NewToolTip();
+}
+
+IconPixmapList StatusNotifierItem::toolTipIconPixmap() const
+{
+    return mTooltipIcon;
 }
 
 void StatusNotifierItem::setToolTipIconByPixmap(const QIcon &icon)
@@ -250,13 +305,19 @@ void StatusNotifierItem::setContextMenu(QMenu* menu)
     else
         setMenuPath(QLatin1String("/NO_DBUSMENU"));
 
-    //Note: we need to destroy menu exporter before creating new one -> to free the DBus object path for new menu
+    // Note: we need to destroy menu exporter before creating new one
+    // to free the DBus object path for new menu
     delete mMenuExporter;
     if (nullptr != mMenu)
     {
         connect(mMenu, &QObject::destroyed, this, &StatusNotifierItem::onMenuDestroyed);
         mMenuExporter = new DBusMenuExporter{this->menu().path(), mMenu, mSessionBus};
     }
+}
+
+QMenu* StatusNotifierItem::contextMenu() const
+{
+    return mMenu;
 }
 
 void StatusNotifierItem::Activate(int x, int y)

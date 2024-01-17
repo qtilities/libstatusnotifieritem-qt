@@ -1,51 +1,57 @@
-/* BEGIN_COMMON_COPYRIGHT_HEADER
- * (c)LGPL2+
- *
- * LXQt - a lightweight, Qt based, desktop toolset
- * https://lxqt.org
- *
- * Copyright: 2015 LXQt team
- * Authors:
- *  Balázs Béla <balazsbela[at]gmail.com>
- *  Paulo Lieuthier <paulolieuthier@gmail.com>
- *
- * This program or library is free software; you can redistribute it
- * and/or modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General
- * Public License along with this library; if not, write to the
- * Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301 USA
- *
- * END_COMMON_COPYRIGHT_HEADER */
+/*
+    SPDX-FileCopyrightText:  2015 LXQt team, 2024 Qtilities team
+    SPDX-License-Identifier: LGPL-2.1-or-later
 
+    This file is part of the statusnotifieritem-qt library
+    Authors:
+        Balázs Béla     <balazsbela[at]gmail.com>
+        Paulo Lieuthier <paulolieuthier@gmail.com>
+*/
 #include <QDBusArgument>
 
 #ifndef DBUSTYPES_H
 #define DBUSTYPES_H
 
+/*!
+    ARGB32 binary representation of the icon.
+*/
 struct IconPixmap {
-    int width;
-    int height;
-    QByteArray bytes;
+    int width;        //!< The icon width. @todo pixels?
+    int height;       //!< The icon height.
+    QByteArray bytes; //!< The icon data.
 };
 
+/*!
+    All the icons can be transferred over the bus by a particular serialization
+    of their data, capable of representing multiple resolutions of the same image
+    or a brief animation of images of the same size.
+
+    Icons are transferred in an array of raw image data structures of signature
+    a(iiay) whith each one describing the width, height, and image data respectively.
+    The data is represented in ARGB32 format and is in the network byte order,
+    to make easy the communication over the network between little and big endian machines.
+*/
 typedef QList<IconPixmap> IconPixmapList;
 
 Q_DECLARE_METATYPE(IconPixmap)
 Q_DECLARE_METATYPE(IconPixmapList)
 
+/*!
+    Data structure that describes extra information associated to this item,
+    that can be visualized for instance by a tooltip
+    (or by any other mean the visualization consider appropriate).
+*/
 struct ToolTip {
+    //! Freedesktop-compliant name for an icon.
     QString iconName;
+    //! Icon data.
     QList<IconPixmap> iconPixmap;
+    //! Title for this tooltip.
     QString title;
+    //! @brief Descriptive text for this tooltip.
+    //! It can contain also a subset of the HTML markup language,
+    //! for a list of allowed tags see Section [Markup].
+    //! [Markup]: https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/Markup/
     QString description;
 };
 
