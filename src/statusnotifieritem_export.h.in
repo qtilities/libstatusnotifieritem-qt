@@ -8,9 +8,9 @@
 #ifndef SNI_QT_EXPORT_H
 #define SNI_QT_EXPORT_H
 
-#include <statusnotifieritem_qt_version.h>
+#include "statusnotifieritem_version.h"
 
-#include <QtCore/QtGlobal>
+#include <QtGlobal>
 
 #ifdef @SNI_QT_EXPORTS_PREFIX@_EXPORTS
 #define SNI_QT_EXPORT Q_DECL_EXPORT
