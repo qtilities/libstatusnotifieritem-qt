@@ -9,16 +9,21 @@
 #ifndef STATUS_NOTIFIER_ITEM_H
 #define STATUS_NOTIFIER_ITEM_H
 
-#include <QObject>
-#include <QIcon>
-#include <QMenu>
-#include <QDBusConnection>
-
 #include "dbustypes.h"
 #include "statusnotifieritem_export.h"
 
-class StatusNotifierItemAdaptor;
-class DBusMenuExporter;
+#include <QObject>
+#include <QPoint>
+#include <QString>
+
+#include <memory>
+
+QT_BEGIN_NAMESPACE
+class QIcon;
+class QMenu;
+QT_END_NAMESPACE
+
+class StatusNotifierItemPrivate;
 /*!
     Qt implementation of the Freedesktop' [StatusNotifierItem] specification.
 
@@ -42,7 +47,7 @@ class SNI_QT_EXPORT StatusNotifierItem : public QObject
     /*!
         Item category, see @ref ItemCategory.
     */
-    Q_PROPERTY(QString Category READ category)
+    Q_PROPERTY(ItemCategory Category READ category)
     /*!
         It's a name that should be unique for this application
         and consistent between sessions, such as the application
@@ -59,7 +64,7 @@ class SNI_QT_EXPORT StatusNotifierItem : public QObject
         The status of this item or of the associated application, see @ref ItemStatus.
         @see title() setTitle()
     */
-    Q_PROPERTY(QString Status READ status)
+    Q_PROPERTY(ItemStatus Status READ status)
 #if 0
     /*!
         It's the windowing-system dependent identifier for a window.
@@ -141,6 +146,8 @@ class SNI_QT_EXPORT StatusNotifierItem : public QObject
     */
     Q_PROPERTY(QDBusObjectPath Menu READ menu)
 
+    friend class StatusNotifierItemPrivate;
+
 public:
     //! Describes the status of this item or of the associated application.
     //! The allowed values for the Status property are:
@@ -211,25 +218,25 @@ public:
         Sets the status of this item or of the associated application.
         @see ItemStatus
     */
-    void setStatus(const QString &status);
+    void setStatus(StatusNotifierItem::ItemStatus status);
 
     /*!
         @return the status of this item or of the associated application.
         @see ItemStatus
     */
-    QString status() const;
+    StatusNotifierItem::ItemStatus status() const;
 
     /*!
         Sets the category for this item.
         @see ItemCategory
     */
-    void setCategory(const QString &category);
+    void setCategory(StatusNotifierItem::ItemCategory category);
 
     /*!
         @return the category of this item.
         @see ItemCategory
     */
-    QString category() const;
+    StatusNotifierItem::ItemCategory category() const;
 
     /*!
         Sets the menu object path.
@@ -354,15 +361,7 @@ public:
     /*!
         @return a ToolTip object instance.
     */
-    ToolTip toolTip() const
-    {
-        ToolTip tt;
-        tt.title = mTooltipTitle;
-        tt.description = mTooltipSubtitle;
-        tt.iconName = mTooltipIconName;
-        tt.iconPixmap = mTooltipIcon;
-        return tt;
-    }
+    ToolTip toolTip() const;
 
     /*!
         @note We don't take ownership of the menu.
@@ -431,11 +430,6 @@ public Q_SLOTS:
     */
     void Scroll(int delta, const QString &orientation);
 
-    /*!
-        TODO
-    */
-    void showMessage(const QString &title, const QString &msg, const QString &iconName, int secs);
-
 Q_SIGNALS:
     /*!
         Inform the host application that an activation has been requested.
@@ -471,40 +465,7 @@ Q_SIGNALS:
     void scrollRequested(int delta, Qt::Orientation orientation);
 
 private:
-    void registerToHost();
-    IconPixmapList iconToPixmapList(const QIcon &icon);
-
-private Q_SLOTS:
-    void onServiceOwnerChanged(const QString &service, const QString &oldOwner,
-                               const QString &newOwner);
-    void onMenuDestroyed();
-
-private:
-    StatusNotifierItemAdaptor *mAdaptor;
-
-    QString mService;
-    QString mId;
-    QString mTitle;
-    QString mStatus;
-    QString mCategory;
-
-    // icons
-    QString mIconName, mOverlayIconName, mAttentionIconName;
-    IconPixmapList mIcon, mOverlayIcon, mAttentionIcon;
-    qint64 mIconCacheKey, mOverlayIconCacheKey, mAttentionIconCacheKey;
-
-    // tooltip
-    QString mTooltipTitle, mTooltipSubtitle, mTooltipIconName;
-    IconPixmapList mTooltipIcon;
-    qint64 mTooltipIconCacheKey;
-
-    // menu
-    QMenu *mMenu;
-    QDBusObjectPath mMenuPath;
-    DBusMenuExporter *mMenuExporter;
-    QDBusConnection mSessionBus;
-
-    static int mServiceCounter;
+    std::unique_ptr<StatusNotifierItemPrivate> const d;
 };
 
 #endif

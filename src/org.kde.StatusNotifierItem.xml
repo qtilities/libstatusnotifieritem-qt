@@ -7,25 +7,40 @@
     <property name="Title" type="s" access="read"/>
     <property name="Status" type="s" access="read"/>
     <property name="WindowId" type="i" access="read"/>
+
     <property name="IconThemePath" type="s" access="read"/>
     <property name="Menu" type="o" access="read"/>
     <property name="ItemIsMenu" type="b" access="read"/>
+
     <property name="IconName" type="s" access="read"/>
+
+    <!--(iiay) is an image-->
     <property name="IconPixmap" type="a(iiay)" access="read">
       <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
     </property>
+
     <property name="OverlayIconName" type="s" access="read"/>
+
     <property name="OverlayIconPixmap" type="a(iiay)" access="read">
       <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
     </property>
+
     <property name="AttentionIconName" type="s" access="read"/>
+
     <property name="AttentionIconPixmap" type="a(iiay)" access="read">
       <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
     </property>
+
     <property name="AttentionMovieName" type="s" access="read"/>
+
     <property name="ToolTip" type="(sa(iiay)ss)" access="read">
       <annotation name="org.qtproject.QtDBus.QtTypeName" value="ToolTip"/>
     </property>
+
+    <!--method name="ProvideXdgActivationToken">
+        <arg name="token" type="s" direction="in"/>
+    </method-->
+
     <method name="ContextMenu">
         <arg name="x" type="i" direction="in"/>
         <arg name="y" type="i" direction="in"/>
@@ -57,6 +72,9 @@
 
     <signal name="NewOverlayIcon">
     </signal>
+
+    <!--signal name="NewMenu">
+    </signal-->
 
     <signal name="NewToolTip">
     </signal>

@@ -43,7 +43,7 @@ SNIExample::SNIExample(QObject* parent)
 {
     sni_->setContextMenu(contextMenu_);
     sni_->setIconByName(QStringLiteral("face-smile"));
-    sni_->setStatus(QStringLiteral("Active"));
+    sni_->setStatus(StatusNotifierItem::ItemStatus::Active);
 
     QAction* quit = new QAction(QIcon::fromTheme("application-exit"), tr("&Quit"), contextMenu_);
     contextMenu_->addAction(quit);

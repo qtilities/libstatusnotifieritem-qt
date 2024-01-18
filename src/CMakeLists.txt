@@ -5,6 +5,7 @@ set(PROJECT_SOURCES
     dbustypes.h
     dbustypes.cpp
     statusnotifieritem.h
+    statusnotifieritem_p.h
     statusnotifieritem.cpp
     org.kde.StatusNotifierItem.xml
 )

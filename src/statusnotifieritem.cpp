@@ -7,343 +7,306 @@
         Paulo Lieuthier <paulolieuthier@gmail.com>
 */
 #include "statusnotifieritem.h"
+#include "statusnotifieritem_p.h"
 #include "statusnotifieritemadaptor.h"
-#include <QDBusInterface>
-#include <QDBusServiceWatcher>
-#include <utility>
+
 #include <dbusmenuexporter.h>
 
-int StatusNotifierItem::mServiceCounter = 0;
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusServiceWatcher>
+
+#include <QIcon>
+#include <QMenu>
+
+#include <utility>
 
 StatusNotifierItem::StatusNotifierItem(QString id, QObject *parent)
-    : QObject(parent),
-    mAdaptor(new StatusNotifierItemAdaptor(this)),
-    mService(QString::fromLatin1("org.freedesktop.StatusNotifierItem-%1-%2")
-             .arg(QCoreApplication::applicationPid())
-             .arg(++mServiceCounter)),
-    mId(std::move(id)),
-    mTitle(QLatin1String("Test")),
-    mStatus(QLatin1String("Active")),
-    mCategory(QLatin1String("ApplicationStatus")),
-    mMenu(nullptr),
-    mMenuPath(QLatin1String("/NO_DBUSMENU")),
-    mMenuExporter(nullptr),
-    mSessionBus(QDBusConnection::connectToBus(QDBusConnection::SessionBus, mService))
+    : QObject(parent)
+    , d(new StatusNotifierItemPrivate(this))
 {
-    // Register DBus meta types
-    qDBusRegisterMetaType<IconPixmap>();
-    qDBusRegisterMetaType<IconPixmapList>();
-    qDBusRegisterMetaType<ToolTip>();
-
-    // Separate DBus connection to the session bus is created, because QDbus does not provide
-    // a way to register different objects for different services with the same paths.
-    // For status notifiers we need different /StatusNotifierItem for each service.
-
-    // register service
-
-    mSessionBus.registerObject(QLatin1String("/StatusNotifierItem"), this);
-
-    registerToHost();
-
-    // monitor the watcher service in case the host restarts
-    QDBusServiceWatcher *watcher = new QDBusServiceWatcher(QLatin1String("org.kde.StatusNotifierWatcher"),
-                                                           mSessionBus,
-                                                           QDBusServiceWatcher::WatchForOwnerChange,
-                                                           this);
-    connect(watcher, &QDBusServiceWatcher::serviceOwnerChanged,
-            this, &StatusNotifierItem::onServiceOwnerChanged);
+    d->init(id);
 }
 
 StatusNotifierItem::~StatusNotifierItem()
 {
-    mSessionBus.unregisterObject(QLatin1String("/StatusNotifierItem"));
-    QDBusConnection::disconnectFromBus(mService);
+    d->sessionBus->unregisterObject(QLatin1String("/StatusNotifierItem"));
+    QDBusConnection::disconnectFromBus(d->service);
 }
 
 QString StatusNotifierItem::id() const
 {
-    return mId;
+    return d->id;
 }
 
 QString StatusNotifierItem::title() const
 {
-    return mTitle;
-}
-
-void StatusNotifierItem::registerToHost()
-{
-    QDBusInterface interface(QLatin1String("org.kde.StatusNotifierWatcher"),
-                             QLatin1String("/StatusNotifierWatcher"),
-                             QLatin1String("org.kde.StatusNotifierWatcher"),
-                             mSessionBus);
-    interface.asyncCall(QLatin1String("RegisterStatusNotifierItem"), mSessionBus.baseService());
-}
-
-void StatusNotifierItem::onServiceOwnerChanged(const QString& service, const QString& oldOwner,
-                                               const QString& newOwner)
-{
-	Q_UNUSED(service);
-	Q_UNUSED(oldOwner);
-
-    if (!newOwner.isEmpty())
-        registerToHost();
-}
-
-void StatusNotifierItem::onMenuDestroyed()
-{
-    mMenu = nullptr;
-    setMenuPath(QLatin1String("/NO_DBUSMENU"));
-    mMenuExporter = nullptr; //mMenu is a QObject parent of the mMenuExporter
+    return d->title;
 }
 
 void StatusNotifierItem::setTitle(const QString &title)
 {
-    if (mTitle == title)
+    if (d->title == title)
         return;
 
-    mTitle = title;
-    Q_EMIT mAdaptor->NewTitle();
+    d->title = title;
+    Q_EMIT d->adaptor->NewTitle();
 }
 
-QString StatusNotifierItem::status() const
+StatusNotifierItem::ItemStatus StatusNotifierItem::status() const
 {
-    return mStatus;
+    return d->status;
 }
-void StatusNotifierItem::setStatus(const QString &status)
+
+void StatusNotifierItem::setStatus(ItemStatus status)
 {
-    if (mStatus == status)
+    if (d->status == status)
         return;
 
-    mStatus = status;
-    Q_EMIT mAdaptor->NewStatus(mStatus);
+    d->status = status;
+
+#ifdef QT_DBUS_LIB
+    Q_EMIT d->adaptor->NewStatus(
+        QString::fromLatin1(metaObject()->enumerator(metaObject()->indexOfEnumerator("ItemStatus")).valueToKey(d->status))
+    );
+#endif
 }
 
-QString StatusNotifierItem::category() const
+StatusNotifierItem::ItemCategory StatusNotifierItem::category() const
 {
-    return mCategory;
+    return d->category;
 }
 
-void StatusNotifierItem::setCategory(const QString &category)
+void StatusNotifierItem::setCategory(ItemCategory category)
 {
-    if (mCategory == category)
+    if (d->category == category)
         return;
 
-    mCategory = category;
+    d->category = category;
 }
 
 void StatusNotifierItem::setMenuPath(const QString& path)
 {
-    mMenuPath.setPath(path);
+    d->menuObjectPath.setPath(path);
 }
 
 QDBusObjectPath StatusNotifierItem::menu() const
 {
-    return mMenuPath;
+    return d->menuObjectPath;
 }
 
 void StatusNotifierItem::setIconByName(const QString &name)
 {
-    if (mIconName == name)
+    if (d->iconName == name)
         return;
 
-    mIconName = name;
-    Q_EMIT mAdaptor->NewIcon();
+    d->iconName = name;
+    Q_EMIT d->adaptor->NewIcon();
 }
 
 QString StatusNotifierItem::iconName() const
 {
-    return mIconName;
+    return d->iconName;
 }
 
 IconPixmapList StatusNotifierItem::iconPixmap() const
 {
-    return mIcon;
+    return d->icon;
 }
 
 void StatusNotifierItem::setIconByPixmap(const QIcon &icon)
 {
-    if (mIconCacheKey == icon.cacheKey())
+    if (d->iconCacheKey == icon.cacheKey())
         return;
 
-    mIconCacheKey = icon.cacheKey();
-    mIcon = iconToPixmapList(icon);
-    mIconName.clear();
-    Q_EMIT mAdaptor->NewIcon();
+    d->iconCacheKey = icon.cacheKey();
+    d->icon = d->iconToPixmapList(icon);
+    d->iconName.clear();
+    Q_EMIT d->adaptor->NewIcon();
 }
 
 QString StatusNotifierItem::overlayIconName() const
 {
-    return mOverlayIconName;
+    return d->overlayIconName;
 }
 
 void StatusNotifierItem::setOverlayIconByName(const QString &name)
 {
-    if (mOverlayIconName == name)
+    if (d->overlayIconName == name)
         return;
 
-    mOverlayIconName = name;
-    Q_EMIT mAdaptor->NewOverlayIcon();
+    d->overlayIconName = name;
+    Q_EMIT d->adaptor->NewOverlayIcon();
 }
 
 IconPixmapList StatusNotifierItem::overlayIconPixmap() const
 {
-    return mOverlayIcon;
+    return d->overlayIcon;
 }
 
 void StatusNotifierItem::setOverlayIconByPixmap(const QIcon &icon)
 {
-    if (mOverlayIconCacheKey == icon.cacheKey())
+    if (d->overlayIconCacheKey == icon.cacheKey())
         return;
 
-    mOverlayIconCacheKey = icon.cacheKey();
-    mOverlayIcon = iconToPixmapList(icon);
-    mOverlayIconName.clear();
-    Q_EMIT mAdaptor->NewOverlayIcon();
+    d->overlayIconCacheKey = icon.cacheKey();
+    d->overlayIcon = d->iconToPixmapList(icon);
+    d->overlayIconName.clear();
+    Q_EMIT d->adaptor->NewOverlayIcon();
 }
 
 QString StatusNotifierItem::attentionIconName() const
 {
-    return mAttentionIconName;
+    return d->attentionIconName;
 }
 
 void StatusNotifierItem::setAttentionIconByName(const QString &name)
 {
-    if (mAttentionIconName == name)
+    if (d->attentionIconName == name)
         return;
 
-    mAttentionIconName = name;
-    Q_EMIT mAdaptor->NewAttentionIcon();
+    d->attentionIconName = name;
+    Q_EMIT d->adaptor->NewAttentionIcon();
 }
 
 IconPixmapList StatusNotifierItem::attentionIconPixmap() const
 {
-    return mAttentionIcon;
+    return d->attentionIcon;
 }
 
 void StatusNotifierItem::setAttentionIconByPixmap(const QIcon &icon)
 {
-    if (mAttentionIconCacheKey == icon.cacheKey())
+    if (d->attentionIconCacheKey == icon.cacheKey())
         return;
 
-    mAttentionIconCacheKey = icon.cacheKey();
-    mAttentionIcon = iconToPixmapList(icon);
-    mAttentionIconName.clear();
-    Q_EMIT mAdaptor->NewAttentionIcon();
+    d->attentionIconCacheKey = icon.cacheKey();
+    d->attentionIcon = d->iconToPixmapList(icon);
+    d->attentionIconName.clear();
+    Q_EMIT d->adaptor->NewAttentionIcon();
 }
 
 QString StatusNotifierItem::toolTipTitle() const
 {
-    return mTooltipTitle;
+    return d->tooltipTitle;
 }
 
 void StatusNotifierItem::setToolTipTitle(const QString &title)
 {
-    if (mTooltipTitle == title)
+    if (d->tooltipTitle == title)
         return;
 
-    mTooltipTitle = title;
-    Q_EMIT mAdaptor->NewToolTip();
+    d->tooltipTitle = title;
+    Q_EMIT d->adaptor->NewToolTip();
 }
 
 QString StatusNotifierItem::toolTipSubTitle() const
 {
-    return mTooltipSubtitle;
+    return d->tooltipSubtitle;
 }
 
 void StatusNotifierItem::setToolTipSubTitle(const QString &subTitle)
 {
-    if (mTooltipSubtitle == subTitle)
+    if (d->tooltipSubtitle == subTitle)
         return;
 
-    mTooltipSubtitle = subTitle;
-    Q_EMIT mAdaptor->NewToolTip();
+    d->tooltipSubtitle = subTitle;
+    Q_EMIT d->adaptor->NewToolTip();
 }
 
 QString StatusNotifierItem::toolTipIconName() const
 {
-    return mTooltipIconName;
+    return d->tooltipIconName;
 }
 
 void StatusNotifierItem::setToolTipIconByName(const QString &name)
 {
-    if (mTooltipIconName == name)
+    if (d->tooltipIconName == name)
         return;
 
-    mTooltipIconName = name;
-    Q_EMIT mAdaptor->NewToolTip();
+    d->tooltipIconName = name;
+    Q_EMIT d->adaptor->NewToolTip();
 }
 
 IconPixmapList StatusNotifierItem::toolTipIconPixmap() const
 {
-    return mTooltipIcon;
+    return d->tooltipIcon;
 }
 
 void StatusNotifierItem::setToolTipIconByPixmap(const QIcon &icon)
 {
-    if (mTooltipIconCacheKey == icon.cacheKey())
+    if (d->tooltipIconCacheKey == icon.cacheKey())
         return;
 
-    mTooltipIconCacheKey = icon.cacheKey();
-    mTooltipIcon = iconToPixmapList(icon);
-    mTooltipIconName.clear();
-    Q_EMIT mAdaptor->NewToolTip();
+    d->tooltipIconCacheKey = icon.cacheKey();
+    d->tooltipIcon = d->iconToPixmapList(icon);
+    d->tooltipIconName.clear();
+    Q_EMIT d->adaptor->NewToolTip();
+}
+
+ToolTip StatusNotifierItem::toolTip() const
+{
+    ToolTip tt;
+    tt.title       = d->tooltipTitle;
+    tt.description = d->tooltipSubtitle;
+    tt.iconName    = d->tooltipIconName;
+    tt.iconPixmap  = d->tooltipIcon;
+    return tt;
 }
 
 void StatusNotifierItem::setContextMenu(QMenu* menu)
 {
-    if (mMenu == menu)
+    if (d->menu == menu)
         return;
 
-    if (nullptr != mMenu)
-    {
-        disconnect(mMenu, &QObject::destroyed, this, &StatusNotifierItem::onMenuDestroyed);
-    }
-    mMenu = menu;
+    if (d->menu)
+        QObject::disconnect(d->menu, &QObject::destroyed, d.get(), &StatusNotifierItemPrivate::onMenuDestroyed);
 
-    if (nullptr != mMenu)
+    d->menu = menu;
+
+    if (d->menu)
         setMenuPath(QLatin1String("/MenuBar"));
     else
         setMenuPath(QLatin1String("/NO_DBUSMENU"));
 
     // Note: we need to destroy menu exporter before creating new one
     // to free the DBus object path for new menu
-    delete mMenuExporter;
-    if (nullptr != mMenu)
-    {
-        connect(mMenu, &QObject::destroyed, this, &StatusNotifierItem::onMenuDestroyed);
-        mMenuExporter = new DBusMenuExporter{this->menu().path(), mMenu, mSessionBus};
+    delete d->menuExporter;
+
+    if (d->menu) {
+        QObject::connect(d->menu, &QObject::destroyed, d.get(), &StatusNotifierItemPrivate::onMenuDestroyed);
+        d->menuExporter = new DBusMenuExporter{this->menu().path(), d->menu, *d->sessionBus.get()};
     }
 }
 
 QMenu* StatusNotifierItem::contextMenu() const
 {
-    return mMenu;
+    return d->menu;
 }
 
 void StatusNotifierItem::Activate(int x, int y)
 {
-    if (mStatus == QLatin1String("NeedsAttention"))
-        mStatus = QLatin1String("Active");
+    if (d->status == StatusNotifierItem::NeedsAttention)
+        d->status = StatusNotifierItem::Active;
 
     Q_EMIT activateRequested(QPoint(x, y));
 }
 
 void StatusNotifierItem::SecondaryActivate(int x, int y)
 {
-    if (mStatus == QLatin1String("NeedsAttention"))
-        mStatus = QLatin1String("Active");
+    if (d->status == StatusNotifierItem::NeedsAttention)
+        d->status = StatusNotifierItem::Active;
 
     Q_EMIT secondaryActivateRequested(QPoint(x, y));
 }
 
 void StatusNotifierItem::ContextMenu(int x, int y)
 {
-    if (mMenu != nullptr)
+    if (d->menu != nullptr)
     {
-        if (mMenu->isVisible())
-            mMenu->popup(QPoint(x, y));
+        if (d->menu->isVisible())
+            d->menu->popup(QPoint(x, y));
         else
-            mMenu->hide();
+            d->menu->hide();
     }
 }
 
@@ -355,24 +318,97 @@ void StatusNotifierItem::Scroll(int delta, const QString &orientation)
 
     Q_EMIT scrollRequested(delta, orient);
 }
+//==============================================================================
+// StatusNotifierItemPrivate
+//==============================================================================
+int StatusNotifierItemPrivate::serviceCounter = 0;
 
-void StatusNotifierItem::showMessage(const QString& title, const QString& msg,
-                                     const QString& iconName, int secs)
+StatusNotifierItemPrivate::StatusNotifierItemPrivate(StatusNotifierItem* item)
+    : q(item)
+    , category(StatusNotifierItem::ApplicationStatus)
+    , status(StatusNotifierItem::Active)
 {
-    QDBusInterface interface(QLatin1String("org.freedesktop.Notifications"), QLatin1String("/org/freedesktop/Notifications"),
-                             QLatin1String("org.freedesktop.Notifications"), mSessionBus);
-    interface.call(QLatin1String("Notify"), mTitle, (uint) 0, iconName, title,
-                   msg, QStringList(), QVariantMap(), secs);
 }
 
-IconPixmapList StatusNotifierItem::iconToPixmapList(const QIcon& icon)
+void StatusNotifierItemPrivate::init(QString extraId)
+{
+    id              = std::move(extraId);
+    title           = QLatin1String("Test");
+#ifdef QT_DBUS_LIB
+    adaptor         = new StatusNotifierItemAdaptor(q);
+    service         = QString::fromLatin1("org.freedesktop.StatusNotifierItem-%1-%2")
+                        .arg(QCoreApplication::applicationPid(), ++serviceCounter);
+    sessionBus      = std::make_unique<QDBusConnection>(QDBusConnection::connectToBus(QDBusConnection::SessionBus, service));
+
+    menuObjectPath.setPath(QLatin1String("/NO_DBUSMENU"));
+
+    // Register DBus meta types
+    qDBusRegisterMetaType<IconPixmap>();
+    qDBusRegisterMetaType<IconPixmapList>();
+    qDBusRegisterMetaType<ToolTip>();
+
+    // Separate DBus connection to the session bus is created, because QDbus does not provide
+    // a way to register different objects for different services with the same paths.
+    // For status notifiers we need different /StatusNotifierItem for each service.
+
+    // register service
+    sessionBus->registerObject(QLatin1String("/StatusNotifierItem"), q);
+    registerToHost();
+
+    // monitor the watcher service in case the host restarts
+    QDBusServiceWatcher *watcher = new QDBusServiceWatcher(
+        QLatin1String("org.kde.StatusNotifierWatcher"),
+        *sessionBus.get(),
+        QDBusServiceWatcher::WatchForOwnerChange,
+        q
+    );
+    QObject::connect(
+        watcher, &QDBusServiceWatcher::serviceOwnerChanged,
+        this, &StatusNotifierItemPrivate::onServiceOwnerChanged
+    );
+#endif
+}
+
+void StatusNotifierItemPrivate::registerToHost()
+{
+    QDBusInterface interface(
+        QLatin1String("org.kde.StatusNotifierWatcher"),
+        QLatin1String("/StatusNotifierWatcher"),
+        QLatin1String("org.kde.StatusNotifierWatcher"), *sessionBus.get()
+    );
+    interface.asyncCall(
+        QLatin1String("RegisterStatusNotifierItem"),
+        sessionBus->baseService()
+    );
+}
+
+void StatusNotifierItemPrivate::onMenuDestroyed()
+{
+    menu = nullptr;
+    q->setMenuPath(QLatin1String("/NO_DBUSMENU"));
+    // menu is a QObject parent of the menuExporter
+    menuExporter = nullptr;
+}
+
+void StatusNotifierItemPrivate::onServiceOwnerChanged(
+    const QString& service,
+    const QString& oldOwner,
+    const QString& newOwner
+) {
+    Q_UNUSED(service)
+    Q_UNUSED(oldOwner)
+
+    if (!newOwner.isEmpty())
+        registerToHost();
+}
+
+IconPixmapList StatusNotifierItemPrivate::iconToPixmapList(const QIcon& icon)
 {
     IconPixmapList pixmapList;
 
     // long live KDE!
     const QList<QSize> sizes = icon.availableSizes();
-    for (const QSize &size : sizes)
-    {
+    for (const QSize &size : sizes) {
         QImage image = icon.pixmap(size).toImage();
 
         IconPixmap pix;
@@ -382,22 +418,18 @@ IconPixmapList StatusNotifierItem::iconToPixmapList(const QIcon& icon)
         if (image.format() != QImage::Format_ARGB32)
             image = image.convertToFormat(QImage::Format_ARGB32);
 
-        pix.bytes = QByteArray((char *) image.bits(),
-                               image.sizeInBytes());
+        pix.bytes = QByteArray((char *) image.bits(), image.sizeInBytes());
 
         // swap to network byte order if we are little endian
-        if (QSysInfo::ByteOrder == QSysInfo::LittleEndian)
-        {
+        if (QSysInfo::ByteOrder == QSysInfo::LittleEndian) {
             quint32 *uintBuf = (quint32 *) pix.bytes.data();
-            for (uint i = 0; i < pix.bytes.size() / sizeof(quint32); ++i)
-            {
+
+            for (uint i = 0; i < pix.bytes.size() / sizeof(quint32); ++i) {
                 *uintBuf = qToBigEndian(*uintBuf);
                 ++uintBuf;
             }
         }
-
         pixmapList.append(pix);
     }
-
     return pixmapList;
 }
