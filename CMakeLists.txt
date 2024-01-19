@@ -6,7 +6,7 @@ set(PROJECT_QT_VERSION 5 CACHE STRING "Qt version to use [default: 5]")
 project(${LIBRARY_NAME}${PROJECT_QT_VERSION}
     VERSION      0.1.0
     LANGUAGES    CXX
-    HOMEPAGE_URL "https://qtilities.github.io/libdbusmenu-qtilities"
+    HOMEPAGE_URL "https://qtilities.github.io/libstatusnotifieritem-qt"
     DESCRIPTION  "Qt implementation of the StatusNotifierItem specification"
 )
 set(CMAKE_CXX_STANDARD              17)
