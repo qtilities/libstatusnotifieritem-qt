@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 
 set(LIBRARY_NAME "StatusNotifierItemQt")
-set(PROJECT_QT_VERSION 5 CACHE STRING "Qt version to use [default: 5]")
+set(SNI_QT_VERSION 5 CACHE STRING "Qt version to use [default: 5]")
 
-project(${LIBRARY_NAME}${PROJECT_QT_VERSION}
+project(${LIBRARY_NAME}${SNI_QT_VERSION}
     VERSION      0.1.0
     LANGUAGES    CXX
     HOMEPAGE_URL "https://qtilities.github.io/libstatusnotifieritem-qt"
@@ -24,7 +24,7 @@ configure_file(scripts/${LIBRARY_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}
 # Qt
 #=======================================================================================================
 set(CMAKE_AUTOMOC ON)
-find_package(QT NAMES Qt${PROJECT_QT_VERSION})
+find_package(QT NAMES Qt${SNI_QT_VERSION})
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS DBus Widgets)
 find_package(DBusMenuQtilities${QT_VERSION_MAJOR} REQUIRED)
 #=======================================================================================================

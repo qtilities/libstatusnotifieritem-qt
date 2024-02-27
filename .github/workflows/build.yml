@@ -56,7 +56,7 @@ jobs:
           -B build
           -D CMAKE_BUILD_TYPE=${{ env.build_type }}
           -D CMAKE_INSTALL_PREFIX="/usr"
-          -D PROJECT_QT_VERSION=${{ matrix.qt_version }}
+          -D SNI_QT_VERSION=${{ matrix.qt_version }}
         )
         cmake ${options[@]}
         cmake --build build --config ${{ env.build_type }}
@@ -68,7 +68,7 @@ jobs:
           -B build
           -D CMAKE_BUILD_TYPE=${{ env.build_type }}
           -D CMAKE_INSTALL_PREFIX="/usr"
-          -D PROJECT_QT_VERSION=${{ matrix.qt_version }}
+          -D SNI_QT_VERSION=${{ matrix.qt_version }}
         )
         cmake ${options[@]}
 
