@@ -2,17 +2,18 @@ configure_file(statusnotifieritem_export.h.in  ${CMAKE_CURRENT_BINARY_DIR}/statu
 configure_file(statusnotifieritem_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/statusnotifieritem_version.h @ONLY)
 
 set(PROJECT_SOURCES
-    dbustypes.h
-    dbustypes.cpp
+    org.kde.StatusNotifierItem.xml
     statusnotifieritem.h
     statusnotifieritem_p.h
     statusnotifieritem.cpp
-    org.kde.StatusNotifierItem.xml
+    statusnotifieritemdbus_p.hpp
+    statusnotifieritemdbus_p.cpp
+    statusnotifieritemdbus_p_p.hpp
 )
 qt_add_dbus_adaptor(PROJECT_SOURCES
     org.kde.StatusNotifierItem.xml
-    statusnotifieritem.h
-    StatusNotifierItem
+    statusnotifieritemdbus_p.hpp
+    StatusNotifierItemDBus
 )
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 source_group("" FILES ${PROJECT_SOURCES})

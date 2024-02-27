@@ -9,9 +9,9 @@
 #ifndef STATUS_NOTIFIER_ITEM_H
 #define STATUS_NOTIFIER_ITEM_H
 
-#include "dbustypes.h"
 #include "statusnotifieritem_export.h"
 
+#include <QIcon>
 #include <QObject>
 #include <QPoint>
 #include <QString>
@@ -19,7 +19,6 @@
 #include <memory>
 
 QT_BEGIN_NAMESPACE
-class QIcon;
 class QMenu;
 QT_END_NAMESPACE
 
@@ -44,114 +43,14 @@ class StatusNotifierItemPrivate;
 class SNI_QT_EXPORT StatusNotifierItem : public QObject
 {
     Q_OBJECT
-    /*!
-        Item category, see @ref ItemCategory.
-    */
-    Q_PROPERTY(ItemCategory Category READ category)
-    /*!
-        It's a name that should be unique for this application
-        and consistent between sessions, such as the application
-        name itself (QCoreApplication::applicationName()).
-    */
-    Q_PROPERTY(QString Id READ id)
-    /*!
-        Sets the name that describes the application,
-        it can be more descriptive than @ref Id.
-        @see id() StatusNotifierItem()
-    */
-    Q_PROPERTY(QString Title READ title)
-    /*!
-        The status of this item or of the associated application, see @ref ItemStatus.
-        @see title() setTitle()
-    */
-    Q_PROPERTY(ItemStatus Status READ status)
-#if 0
-    /*!
-        It's the windowing-system dependent identifier for a window.
-        The application can chose one of its windows to be available
-        through this property or just set 0 if it's not interested.
-    */
-    Q_PROPERTY(uint32_t WindowId READ windowId)
-#endif
-    /*!
-        The StatusNotifierItem can carry an icon that can be used
-        by the visualization to identify the item.
-
-        An icon can either be identified by its Freedesktop-compliant icon name,
-        carried by this property or by the icon data itself,
-        carried by the property IconPixmap. Visualizations are encouraged
-        to prefer icon names over icon pixmaps if both are available.
-
-        @see iconName() setIconByName()
-    */
-    Q_PROPERTY(QString IconName READ iconName)
-    /*!
-        Carries an ARGB32 binary representation of the icon.
-        the format of icon data used in this specification is described in
-        [Section Icons](https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/Icons/)
-    */
-    Q_PROPERTY(IconPixmapList IconPixmap READ iconPixmap)
-    /*!
-        The Freedesktop-compliant name of an icon.
-        This can be used by the visualization to indicate extra state information,
-        for instance as an overlay for the main icon.
-    */
-    Q_PROPERTY(QString OverlayIconName READ overlayIconName)
-    /*!
-        ARGB32 binary representation of the overlay icon described in the previous paragraph.
-    */
-    Q_PROPERTY(IconPixmapList OverlayIconPixmap READ overlayIconPixmap)
-    /*!
-        The Freedesktop-compliant name of an icon. this can be used by the visualization
-        to indicate that the item is in RequestingAttention state.
-    */
-    Q_PROPERTY(QString AttentionIconName READ attentionIconName)
-    /*!
-        ARGB32 binary representation of the requesting attention icon
-        described in the previous paragraph.
-    */
-    Q_PROPERTY(IconPixmapList AttentionIconPixmap READ attentionIconPixmap)
-#if 0
-    /*!
-        TODO:
-        An item can also specify an animation associated to the RequestingAttention state.
-        This should be either a Freedesktop-compliant icon name or a full path.
-        The visualization can chose between the movie or AttentionIconPixmap
-        (or using neither of those) at its discretion.
-
-        @see attentionMovieName()
-    */
-    Q_PROPERTY(QString AttentionMovieName READ attentionMovieName)
-#endif
-    /*!
-        Item tooltip, see @ref ToolTip.
-        @see toolTip()
-    */
-    Q_PROPERTY(ToolTip ToolTip READ toolTip)
-#if 0
-    /*!
-        TODO:
-        The item only support the context menu, the visualization should prefer
-        showing the menu or sending ContextMenu() instead of Activate().
-        @see itemIsMenu()
-    */
-    Q_PROPERTY(bool ItemIsMenu READ itemIsMenu)
-#endif
-    /*!
-        DBus path to an object which should implement
-        the [com.canonical.dbusmenu] interface.
-        @see menu() setMenuPath()
-
-        [com.canonical.dbusmenu]: https://github.com/qtilities/libdbusmenu-qtilities/
-    */
-    Q_PROPERTY(QDBusObjectPath Menu READ menu)
 
     friend class StatusNotifierItemPrivate;
+    friend class StatusNotifierItemDBus;
 
 public:
     //! Describes the status of this item or of the associated application.
     //! The allowed values for the Status property are:
-    enum ItemStatus {
+    enum SNIStatus {
         //! The item doesn't convey important information to the user,
         //! it can be considered an "idle" status and is likely
         //! that visualizations will chose to hide it.
@@ -165,11 +64,11 @@ public:
         //! Visualizations should emphasize in some way the items with this status.
         NeedsAttention = 3,
     };
-    Q_ENUM(ItemStatus)
+    Q_ENUM(SNIStatus)
 
     //! Describes the category of this item.
     //! The allowed values for the Category property are:
-    enum ItemCategory {
+    enum SNICategory {
         //! The item describes the status of a generic application,
         //! for instance the current state of a media player.
         //! In the case where the category of the item can not be known,
@@ -188,11 +87,12 @@ public:
         Hardware = 4,
         Reserved = 129,
     };
-    Q_ENUM(ItemCategory)
+    Q_ENUM(SNICategory)
+
     /**
         Construct a new status notifier item.
 
-        @param id     The application id, see @ref Id.
+        @param id     The application id.
         @param parent The parent object.
     */
     StatusNotifierItem(QString id, QObject *parent = nullptr);
@@ -205,7 +105,31 @@ public:
     QString id() const;
 
     /*!
-        The application title, see Title.
+        Sets the category for this item.
+        @see SNICategory
+    */
+    void setCategory(SNICategory category);
+
+    /*!
+        @return the category of this item.
+        @see SNICategory
+    */
+    SNICategory category() const;
+
+    /*!
+        Sets the status of this item or of the associated application.
+        @see SNIStatus
+    */
+    void setStatus(SNIStatus status);
+
+    /*!
+        @return the status of this item or of the associated application.
+        @see SNIStatus
+    */
+    SNIStatus status() const;
+
+    /*!
+        The application title, @see Title.
     */
     void setTitle(const QString &title);
 
@@ -215,156 +139,171 @@ public:
     QString title() const;
 
     /*!
-        Sets the status of this item or of the associated application.
-        @see ItemStatus
-    */
-    void setStatus(StatusNotifierItem::ItemStatus status);
+        Sets a new main icon for the system tray.
 
-    /*!
-        @return the status of this item or of the associated application.
-        @see ItemStatus
-    */
-    StatusNotifierItem::ItemStatus status() const;
-
-    /*!
-        Sets the category for this item.
-        @see ItemCategory
-    */
-    void setCategory(StatusNotifierItem::ItemCategory category);
-
-    /*!
-        @return the category of this item.
-        @see ItemCategory
-    */
-    StatusNotifierItem::ItemCategory category() const;
-
-    /*!
-        Sets the menu object path.
-        @see Menu
-    */
-    void setMenuPath(const QString &path);
-
-    /*!
-        @todo rename to menuPath() or the one above to setMenu()?
-        @return the DBus menu path.
-        @see Menu
-    */
-    QDBusObjectPath menu() const;
-#if 0
-    /*!
-        TODO:
-        @return if this item supports only a context menu.
-        @see Menu
-    */
-    bool itemIsMenu() const;
-#endif
-    /*!
-        Sets the item icon name, see @ref IconName.
+        @param name it must be a QIcon::fromTheme compatible name,
+        this is the preferred way to set an icon
     */
     void setIconByName(const QString &name);
 
     /*!
-        @return the item icon name.
+        @return the name of the main icon to be displayed.
     */
     QString iconName() const;
 
     /*!
-        TODO
-    */
-    IconPixmapList iconPixmap() const;
+        Sets a new main icon for the system tray
 
-    /*!
-        TODO
+        @param icon the icon.
+        @note Use setIcon(const QString&) when possible
     */
     void setIconByPixmap(const QIcon &icon);
 
     /*!
-        TODO
+        @return the icon.
     */
-    QString overlayIconName() const;
+    QIcon iconPixmap() const;
 
     /*!
-        TODO
+        Sets an icon to be used as overlay for the main one
+
+        @param name icon name.
+        If name is an empty QString() and overlayIconPixmap() is empty too, the icon will be removed.
     */
     void setOverlayIconByName(const QString &name);
 
     /*!
-        TODO
+        @return the name of the icon to be used as overlay for the main one.
     */
-    IconPixmapList overlayIconPixmap() const;
+    QString overlayIconName() const;
 
     /*!
-        TODO
+        Sets an icon to be used as overlay for the main one.
+        setOverlayIconByPixmap(QIcon()) will remove the overlay when overlayIconName() is empty too.
+
+        @param icon overlay icon.
+        @note Use setOverlayIcon(const QString&) when possible.
     */
     void setOverlayIconByPixmap(const QIcon &icon);
 
     /*!
-        TODO
+        @return the overlay icon.
     */
-    QString attentionIconName() const;
+    QIcon overlayIconPixmap() const;
 
     /*!
-        TODO
+        Sets a new icon that should be used when the application wants to request attention
+        (usually the systemtray will blink between this icon and the main one).
+
+        @param name QIcon::fromTheme() compatible name of icon to use.
     */
     void setAttentionIconByName(const QString &name);
 
     /*!
-        TODO
+        @return the name of the icon to be displayed when the application is requesting the user's attention.
+
+        If attentionImage() is not empty, this will always return an empty string.
     */
-    IconPixmapList attentionIconPixmap() const;
+    QString attentionIconName() const;
 
     /*!
-        TODO
+        Sets the pixmap of the requesting attention icon.
+        @note Use setAttentionIcon(const QString) instead when possible.
+
+        @param icon QIcon to use for requesting attention.
     */
     void setAttentionIconByPixmap(const QIcon &icon);
 
     /*!
-        TODO
+        @return the requesting attention icon.
     */
-    QString toolTipTitle() const;
+    QIcon attentionIconPixmap() const;
+#if 0
+    /*!
+        Sets a movie as the requesting attention icon.
+        This overrides anything set in setAttentionIcon().
+    */
+    void setAttentionMovieByName(const QString &name);
 
     /*!
-        TODO
+        @return the name of the movie to be displayed when the application is requesting the user attention.
     */
-    void setToolTipTitle(const QString &title);
+    QString attentionMovieName() const;
+#endif
+    /*!
+        Sets a new toolTip or this icon, a toolTip is composed of an icon, a title and a text,
+        all fields are optional.
+
+        @param iconName a QIcon::fromTheme compatible name for the tootip icon
+        @param title    tootip title
+        @param subTitle subtitle for the toolTip
+    */
+    void setToolTip(const QString &iconName, const QString &title, const QString &subTitle);
 
     /*!
-        TODO
-    */
-    QString toolTipSubTitle() const;
+        Sets a new toolTip or this status notifier item.
+        This is an overloaded member provided for convenience.
 
-    /*!
-        TODO
+        @param icon     the tootip icon
+        @param title    tootip title
+        @param subTitle subtitle for the toolTip
     */
-    void setToolTipSubTitle(const QString &subTitle);
-
+    void setToolTip(const QIcon &icon, const QString &title, const QString &subTitle);
     /*!
-        TODO
-    */
-    QString toolTipIconName() const;
+        Sets a new icon for the tooltip.
 
-    /*!
-        TODO
+        @param name the name for the icon.
     */
     void setToolTipIconByName(const QString &name);
 
     /*!
-        TODO
+        @return the name of the tooltip icon.
+        If toolTipImage() is not empty, this will always return an empty string.
     */
-    IconPixmapList toolTipIconPixmap() const;
+    QString toolTipIconName() const;
 
     /*!
-        TODO
+        Sets a new icon for the tooltip.
+
+        @note Use setToolTipIconByName(QString) if possible.
+        @param icon the tooltip icon.
     */
     void setToolTipIconByPixmap(const QIcon &icon);
 
     /*!
-        @return a ToolTip object instance.
+        @return the tooltip icon.
     */
-    ToolTip toolTip() const;
+    QIcon toolTipIconPixmap() const;
 
     /*!
-        @note We don't take ownership of the menu.
+        Sets a new title for the tooltip.
+    */
+    void setToolTipTitle(const QString &title);
+
+    /*!
+        @return the title of the tooltip.
+    */
+    QString toolTipTitle() const;
+
+    /*!
+        Sets a new subtitle for the tooltip.
+    */
+    void setToolTipSubTitle(const QString &subTitle);
+
+    /*!
+        @return the subtitle of the tooltip.
+    */
+    QString toolTipSubTitle() const;
+
+    /*!
+        Sets a new context menu for this StatusNotifierItem.
+
+        The menu will be shown with a contextMenu(int, int) call by the systemtray over D-Bus.
+        Usually you don't need to call this unless you want to use a custom QMenu subclass as context menu.
+
+        @note The StatusNotifierItem instance takes ownership of the menu,
+        and will delete it upon its destruction.
+
         @param menu The context menu.
     */
     void setContextMenu(QMenu *menu);
@@ -373,62 +312,6 @@ public:
         @return the context menu associated to this status notifier item.
     */
     QMenu* contextMenu() const;
-
-public Q_SLOTS:
-    /*!
-        Asks the status notifier item to show a context menu.
-
-        This is typically a consequence of user input,
-        such as mouse right click over the graphical representation of the item.
-
-        The x and y parameters are in screen coordinates and is to be considered
-        an hint to the item about where to show the context menu.
-
-        @param x The X coordinate.
-        @param y The Y coordinate.
-    */
-    void ContextMenu(int x, int y);
-
-    /*!
-        Asks the status notifier item for activation.
-
-        This is typically a consequence of user input,
-        such as mouse left click over the graphical representation of the item.
-        The application will perform any task is considered appropriate as an activation request.
-
-        The x and y parameters are in screen coordinates and is to be considered
-        an hint to the item where to show eventual windows (if any).
-
-        @param x The X coordinate.
-        @param y The Y coordinate.
-    */
-    void Activate(int x, int y);
-
-    /*!
-        Secondary and less important form of activation compared to Activate.
-
-        This is typically a consequence of user input,
-        such as mouse middle click over the graphical representation of the item.
-        The application will perform any task is considered appropriate as an activation request.
-
-        The x and y parameters are in screen coordinates and is to be considered
-        an hint to the item where to show eventual windows (if any).
-
-        @param x The X coordinate.
-        @param y The Y coordinate.
-    */
-    void SecondaryActivate(int x, int y);
-
-    /*!
-        The user asked for a scroll action.
-
-        This is typically a consequence of user input,
-        such as mouse wheel over the graphical representation of the item.
-
-        @param delta       Represents the amount of scroll.
-        @param orientation Represents the horizontal or vertical orientation.
-    */
-    void Scroll(int delta, const QString &orientation);
 
 Q_SIGNALS:
     /*!

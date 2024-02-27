@@ -16,25 +16,25 @@
 
     <!--(iiay) is an image-->
     <property name="IconPixmap" type="a(iiay)" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName" value="SNIIconList"/>
     </property>
 
     <property name="OverlayIconName" type="s" access="read"/>
 
     <property name="OverlayIconPixmap" type="a(iiay)" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName" value="SNIIconList"/>
     </property>
 
     <property name="AttentionIconName" type="s" access="read"/>
 
     <property name="AttentionIconPixmap" type="a(iiay)" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="IconPixmapList"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName" value="SNIIconList"/>
     </property>
 
     <property name="AttentionMovieName" type="s" access="read"/>
 
     <property name="ToolTip" type="(sa(iiay)ss)" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="ToolTip"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName" value="SNIToolTip"/>
     </property>
 
     <!--method name="ProvideXdgActivationToken">
